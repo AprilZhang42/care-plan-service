@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Care Plan Service</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 0 16px; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input, textarea { width: 100%; padding: 6px; box-sizing: border-box; }
+    button { margin-top: 16px; padding: 10px 20px; font-size: 16px; }
+    #status { margin-top: 12px; font-style: italic; }
+    #result { white-space: pre-wrap; background: #f4f4f4; padding: 16px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>New Care Plan Order</h1>
+  <form id="order-form">
+    <label>First Name <input name="first_name" required /></label>
+    <label>Last Name <input name="last_name" required /></label>
+    <label>Referring Provider <input name="referring_provider" required /></label>
+    <label>Referring Provider NPI <input name="referring_provider_npi" required /></label>
+    <label>Patient MRN <input name="mrn" required /></label>
+    <label>Primary Diagnosis (ICD-10) <input name="primary_diagnosis" required /></label>
+    <label>Medication Name <input name="medication_name" required /></label>
+    <label>Additional Diagnoses (comma separated) <input name="additional_diagnoses" /></label>
+    <label>Medication History (comma separated) <input name="medication_history" /></label>
+    <label>Patient Records <textarea name="patient_records" rows="6"></textarea></label>
+    <button type="submit">Submit</button>
+  </form>
+
+  <div id="status"></div>
+  <div id="result"></div>
+
+  <script>
+    const form = document.getElementById("order-form");
+    const statusEl = document.getElementById("status");
+    const resultEl = document.getElementById("result");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+
+      statusEl.textContent = "Generating care plan... this can take 10-20 seconds.";
+      resultEl.textContent = "";
+
+      const response = await fetch("/api/orders/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const order = await response.json();
+      statusEl.textContent = "";
+      resultEl.textContent = order.care_plan;
+    });
+  </script>
+</body>
+</html>
