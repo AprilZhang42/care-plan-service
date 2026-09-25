@@ -39,4 +39,7 @@ Write a care plan with exactly these sections:
         max_tokens=1500,
         messages=[{"role": "user", "content": prompt}],
     )
-    return response.content[0].text
+    for block in response.content:
+        if block.type == "text":
+            return block.text
+    return ""

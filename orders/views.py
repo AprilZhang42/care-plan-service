@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -6,6 +7,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .llm import generate_care_plan
+
+logger = logging.getLogger(__name__)
 
 # MVP storage: everything lives in this dict while the process is running.
 # Restarting the server wipes it. A real database comes later.
@@ -21,6 +24,8 @@ def index(request):
 @require_http_methods(["POST"])
 def create_order(request):
     global _next_id
+
+    logger.info("received request, order id will be %s", _next_id)
 
     data = json.loads(request.body)
 
@@ -38,7 +43,9 @@ def create_order(request):
         "patient_records": data.get("patient_records"),
     }
 
+    logger.info("calling LLM for order %s (%s)", order["id"], order["medication_name"])
     order["care_plan"] = generate_care_plan(order)
+    logger.info("LLM returned, care_plan length=%s chars", len(order["care_plan"]))
 
     ORDERS[_next_id] = order
     _next_id += 1

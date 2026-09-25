@@ -49,3 +49,20 @@ DATABASES = {}
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# MVP logging: everything at INFO and above goes to the console (visible via
+# `docker compose logs` or `docker compose up`). A real deployment would add
+# a file/CloudWatch handler here too.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+}
