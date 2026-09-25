@@ -51,3 +51,8 @@ def create_order(request):
     _next_id += 1
 
     return JsonResponse(order)
+
+def get_order(request, order_id):
+    if order_id in ORDERS:
+        return JsonResponse(ORDERS[order_id])
+    return JsonResponse({"error": "Order not found"}, status=404)
