@@ -13,8 +13,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
-# MVP: no database, no auth, no sessions. Just enough apps for templating
-# and static files.
+# MVP: no auth, no sessions. Just enough apps for templating, static files,
+# and our own models.
 INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "orders",
@@ -43,8 +43,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "care_plan_service.wsgi.application"
 
-# No database in this MVP — data lives in an in-memory dict (see orders/views.py).
-DATABASES = {}
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("DB_NAME", "care_plan_service"),
+        "USER": os.environ.get("DB_USER", "care_plan_service"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", "care_plan_service"),
+        "HOST": os.environ.get("DB_HOST", "db"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
+    }
+}
 
 STATIC_URL = "static/"
 

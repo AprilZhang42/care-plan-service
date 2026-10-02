@@ -1,4 +1,20 @@
 services:
+  db:
+    image: postgres:16
+    environment:
+      - POSTGRES_DB=${DB_NAME:-care_plan_service}
+      - POSTGRES_USER=${DB_USER:-care_plan_service}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-care_plan_service}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-care_plan_service}"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
   web:
     build: .
     ports:
@@ -9,3 +25,9 @@ services:
       - .env
     environment:
       - PYTHONUNBUFFERED=1
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
