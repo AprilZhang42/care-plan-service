@@ -1,5 +1,8 @@
 import json
 import logging
+import redis
+
+redis_client = redis.Redis(host="redis", port=6379)
 
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -72,28 +75,40 @@ def create_order(request):
 
     logger.info("received request, created order %s", order.id)
 
-    llm_input = {
-        "first_name": patient.first_name,
-        "last_name": patient.last_name,
-        "mrn": patient.mrn,
-        "referring_provider": provider.name,
-        "referring_provider_npi": provider.npi,
-        "primary_diagnosis": order.primary_diagnosis,
-        "additional_diagnoses": order.additional_diagnoses,
-        "medication_name": order.medication_name,
-        "medication_history": order.medication_history,
-        "patient_records": order.patient_records,
-    }
+    # llm_input = {
+    #     "first_name": patient.first_name,
+    #     "last_name": patient.last_name,
+    #     "mrn": patient.mrn,
+    #     "referring_provider": provider.name,
+    #     "referring_provider_npi": provider.npi,
+    #     "primary_diagnosis": order.primary_diagnosis,
+    #     "additional_diagnoses": order.additional_diagnoses,
+    #     "medication_name": order.medication_name,
+    #     "medication_history": order.medication_history,
+    #     "patient_records": order.patient_records,
+    # }
 
-    logger.info("calling LLM for order %s (%s)", order.id, order.medication_name)
-    content = generate_care_plan(llm_input)
-    logger.info("LLM returned, care_plan length=%s chars", len(content))
+    # logger.info("calling LLM for order %s (%s)", order.id, order.medication_name)
+    # content = generate_care_plan(llm_input)
+    # logger.info("LLM returned, care_plan length=%s chars", len(content))
+    # Day 5: 这段会挪到 worker 里
+
+    # care_plan = CarePlan.objects.create(
+    #     order=order,
+    #     content=content,
+    #     status=CarePlan.Status.COMPLETED,
+    # )
 
     care_plan = CarePlan.objects.create(
         order=order,
-        content=content,
-        status=CarePlan.Status.COMPLETED,
+        content="",
+        status=CarePlan.Status.PENDING,
     )
+
+    redis_client.lpush("careplan_queue", care_plan.id)
+    logger.info("queued care plan %s", care_plan.id)
+
+    return JsonResponse(_serialize_order(order, care_plan), status=202)
 
     return JsonResponse(_serialize_order(order, care_plan))
 
