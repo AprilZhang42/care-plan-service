@@ -1,7 +1,9 @@
+import logging
 import os
 
 from anthropic import Anthropic
 
+logger = logging.getLogger(__name__)
 _client = None
 
 
@@ -36,10 +38,14 @@ Write a care plan with exactly these sections:
     client = _get_client()
     response = client.messages.create(
         model=os.environ.get("LLM_MODEL", "claude-sonnet-5"),
-        max_tokens=1500,
+        max_tokens=8000,
         messages=[{"role": "user", "content": prompt}],
     )
+    logger.info("stop_reason=%s, blocks=%s", response.stop_reason, [b.type for b in response.content])
+    if response.stop_reason == "max_tokens":
+        raise RuntimeError("LLM 输出被截断，max_tokens 不够")
     for block in response.content:
         if block.type == "text":
             return block.text
-    return ""
+    raise RuntimeError(f"LLM 没有返回文字内容，stop_reason={response.stop_reason}")
+    #return ""
