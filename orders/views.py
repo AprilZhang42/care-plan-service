@@ -1,8 +1,9 @@
 import json
 import logging
-import redis
+#import redis
 
-redis_client = redis.Redis(host="redis", port=6379)
+#redis_client = redis.Redis(host="redis", port=6379)
+from orders.tasks import generate_care_plan_task
 
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -105,7 +106,8 @@ def create_order(request):
         status=CarePlan.Status.PENDING,
     )
 
-    redis_client.lpush("careplan_queue", care_plan.id)
+    #redis_client.lpush("careplan_queue", care_plan.id)
+    generate_care_plan_task.delay(care_plan.id)
     logger.info("queued care plan %s", care_plan.id)
 
     return JsonResponse(_serialize_order(order, care_plan), status=202)
