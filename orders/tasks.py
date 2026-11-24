@@ -13,8 +13,8 @@ def hello(name):
     print(f"hello, {name}")
     return f"hello, {name}"
 
-@shared_task
-def generate_care_plan_task(careplan_id):
+@shared_task(bind=True, max_retries=3)
+def generate_care_plan_task(self, careplan_id):
     try:
         care_plan = CarePlan.objects.get(id=careplan_id)
     except CarePlan.DoesNotExist:
@@ -41,11 +41,19 @@ def generate_care_plan_task(careplan_id):
         "patient_records": order.patient_records,
     }
 
-    # 3. 调 LLM；出错标记 failed（下一步改成自动重试）
+    # 3. 调 LLM；失败就按 1、2、4 秒重试，3 次都失败才标记 failed
     try:
         content = generate_care_plan(llm_input)
-    except Exception:
-        logger.exception("care plan %s 生成失败", careplan_id)
+    except Exception as exc:
+        if self.request.retries < self.max_retries:
+            wait = 2 ** self.request.retries
+            logger.warning(
+                "care plan %s 第 %s 次失败，%s 秒后重试：%s",
+                careplan_id, self.request.retries + 1, wait, exc,
+            )
+            raise self.retry(exc=exc, countdown=wait)
+
+        logger.exception("care plan %s 重试 %s 次后仍然失败", careplan_id, self.max_retries)
         care_plan.status = CarePlan.Status.FAILED
         care_plan.save()
         return

@@ -18,6 +18,7 @@ def _get_client():
 
 
 def generate_care_plan(order):
+    #raise RuntimeError("测试重试：故意失败")    
     prompt = f"""You are a clinical pharmacist writing a care plan for a specialty pharmacy order.
 
 Patient: {order['first_name']} {order['last_name']} (MRN: {order['mrn']})
